@@ -74,7 +74,7 @@ lensConeWithScrew :: Waterfall.Solid
     rEnd = 30/2
     borderHeight = 2.5
     borderWidth = 1.5
-    thickness = 2
+    thickness = 4
     helixOffset = 20
     v y z = V2 y z
     profile = Waterfall.closeLoop $ Waterfall.pathFrom (v rBase baseOffset)
