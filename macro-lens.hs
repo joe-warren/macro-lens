@@ -9,6 +9,7 @@
 import qualified Waterfall
 import Linear
 import Data.Function ((&))
+import Data.Monoid (Endo (..))
 
 addCylinderToBase :: Waterfall.Solid -> Waterfall.Solid
 addCylinderToBase s = 
@@ -89,7 +90,7 @@ lensConeWithScrew :: Waterfall.Solid
         ]
     cone = Waterfall.rotate (unit _y) pi $ Waterfall.revolution profile
     helix = Waterfall.translate (coneStart *^ unit _z) $
-        createHelicalArc rEnd rBase (coneEnd - coneStart) 1.5 (12)
+        createHelicalArc rEnd rBase (coneEnd - coneStart) 1 (12)
     helixProfile = Waterfall.unitCircle
     helix' = Waterfall.sweep helix helixProfile
     helixStart = Waterfall.sweep (Waterfall.line (V3 rBase 0 helixOffset) (V3 rBase 0 coneStart)) helixProfile
@@ -99,10 +100,11 @@ lensConeWithScrew :: Waterfall.Solid
         , V3 rBase 0 coneStart
         , V3 rEnd 0 coneEnd
         ] <*> (pure Waterfall.unitSphere)
-    fullHelix = helix' <> helixStart <> helixEnd <> helixJoints
-    allHelix = Waterfall.rotate (unit _y) pi $ 
-         mconcat $ take 6 $ iterate (Waterfall.rotate (unit _z) (pi/3)) $ fullHelix
-  in (cone, cone <> allHelix)
+    fullHelix = Waterfall.rotate (unit _y) pi (helix' <> helixStart <> helixEnd <> helixJoints)
+    allHelix = zipWith ($) (cycle [(<>), flip Waterfall.difference])
+         (take 24 $ iterate (Waterfall.rotate (unit _z) (pi/12)) $ fullHelix)
+    helixify =  appEndo . foldMap Endo $ allHelix
+  in (cone, helixify cone )
     
 subtractCone :: Waterfall.Solid -> Waterfall.Solid
 subtractCone = let offset = Waterfall.offset 0.1 1e-6 
