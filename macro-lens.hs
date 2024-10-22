@@ -9,6 +9,7 @@
 import qualified Waterfall
 import Linear
 import Data.Function ((&))
+import Data.Either (partitionEithers)
 import Data.Monoid (Endo (..))
 
 addCylinderToBase :: Waterfall.Solid -> Waterfall.Solid
@@ -101,9 +102,9 @@ lensConeWithScrew :: Waterfall.Solid
         , V3 rEnd 0 coneEnd
         ] <*> (pure Waterfall.unitSphere)
     fullHelix = Waterfall.rotate (unit _y) pi (helix' <> helixStart <> helixEnd <> helixJoints)
-    allHelix = zipWith ($) (cycle [(<>), flip Waterfall.difference])
+    (additiveHelixes, subtractiveHelixes) = partitionEithers $ zipWith ($) (cycle [Left, Right, Right, Right])
          (take 24 $ iterate (Waterfall.rotate (unit _z) (pi/12)) $ fullHelix)
-    helixify =  appEndo . foldMap Endo $ allHelix
+    helixify =  (`Waterfall.difference` mconcat subtractiveHelixes ). ( <> mconcat additiveHelixes)
   in (cone, helixify cone )
     
 subtractCone :: Waterfall.Solid -> Waterfall.Solid
