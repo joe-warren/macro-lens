@@ -91,7 +91,7 @@ lensConeWithScrew :: Waterfall.Solid
         ]
     cone = Waterfall.rotate (unit _y) pi $ Waterfall.revolution profile
     helix = Waterfall.translate (coneStart *^ unit _z) $
-        createHelicalArc rEnd rBase (coneEnd - coneStart) 1 (12)
+        createHelicalArc rEnd rBase (coneEnd - coneStart) (2/3) (12)
     helixProfile = Waterfall.unitCircle
     helix' = Waterfall.sweep helix helixProfile
     helixStart = Waterfall.sweep (Waterfall.line (V3 rBase 0 helixOffset) (V3 rBase 0 coneStart)) helixProfile
