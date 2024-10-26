@@ -72,7 +72,7 @@ lensConeWithScrew :: Waterfall.Solid
     dLens = 4
     coneEnd = tubeLength - flangeFocalDistance - dLens
     lensFlangeDistance = tubeLength - flangeFocalDistance
-    rEnd = 30/2
+    rEnd = 28/2
     borderHeight = 2.5
     borderWidth = 1.5
     thickness = 4
