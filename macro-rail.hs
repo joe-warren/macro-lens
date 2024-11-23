@@ -1,6 +1,7 @@
 #!/usr/bin/env stack
 {- stack script --resolver lts-22.6 
     --package linear
+    --package lens
     --package waterfall-cad
     --extra-dep waterfall-cad-0.4.0.0
     --extra-dep opencascade-hs-0.4.0.0
@@ -8,6 +9,7 @@
 
 import qualified Waterfall
 import Linear
+import Control.Lens ((^.))
 import Data.Function ((&))
 
 nema17Holes :: Waterfall.Solid
@@ -29,6 +31,9 @@ nema17Holes =
             , y <- [-sep/2, sep/2]
           ]
 
+nearly :: Epsilon a => a -> a -> Bool
+nearly a b = nearZero (a - b)
+
 base :: Waterfall.Solid
 base = 
     let 
@@ -46,7 +51,7 @@ base =
         railAxisAboveRailBase = 12
         railBaseAboveBase = nemaAxisAboveBase - railAxisAboveRailBase
         
-        baseH = 6
+        baseH = 4
 
         nemaPlateT = 10
         nemaHolesPositioned = nema17Holes &
@@ -60,11 +65,11 @@ base =
         railScrewOffset = 48
         railScrew = 
             ((Waterfall.centeredCylinder & Waterfall.scale (V3 railScrewR railScrewR 100)) <>
-                (Waterfall.centeredCylinder & Waterfall.scale (V3 railScrewCapR railScrewCapR 6))) &
+                (Waterfall.centeredCylinder & Waterfall.scale (V3 railScrewCapR railScrewCapR 10))) &
                 Waterfall.translate (V3 railScrewOffset (baseT/2) 0)
 
         railGuides = mconcat 
-            [ Waterfall.unitCylinder & Waterfall.scale (V3 0.5 0.5 railBaseL) & 
+            [ Waterfall.unitCylinder & Waterfall.scale (V3 1 1 railBaseL) & 
                 Waterfall.rotate (unit _y) (pi/2) &
                 Waterfall.translate (V3 0 (baseT/2 + yOff) (baseH + railBaseAboveBase))
                 | yOff <- [-14, 14]
@@ -104,8 +109,12 @@ base =
 
         baseSideB = baseSideA &
             Waterfall.translate ((sideT - baseT) *^ unit _y )
+        shouldBevel  a b = ((a ^. _xy) `nearly` (b ^. _xy)) && (((a ^. _x) `nearly` 0)  || ((a ^._x) `nearly` baseL) || ((a ^. _y) `nearly` 0) || ((a ^. _y) `nearly` baseT))
+        bevelF (a, b) = if shouldBevel a b then Just 8 else Nothing
+        bevel = Waterfall.roundConditionalFillet bevelF
 
-    in (baseProfiled <> railGuides <> baseSideA <> baseSideB) `Waterfall.difference` (railScrew <> nemaHolesPositioned)
+
+    in bevel ((baseProfiled <> railGuides <> baseSideA <> baseSideB) `Waterfall.difference` (railScrew <> nemaHolesPositioned))
 
 coupler :: Waterfall.Solid
 coupler = 
