@@ -48,21 +48,12 @@ base =
         
         baseH = 6
 
-        basePlate = Waterfall.unitCube &
-            Waterfall.scale (V3 baseL baseT baseH)
-
         nemaPlateT = 10
         nemaHolesPositioned = nema17Holes &
             Waterfall.rotate (unit _y) (pi/2) &
             Waterfall.translate (unit _z ^* (nemaAxisAboveBase + baseH)) &
             Waterfall.translate (unit _y ^* (baseT/2)) &
             Waterfall.translate (unit _x ^* (baseL - nemaL))
-        nemaPlate = Waterfall.unitCube & 
-            Waterfall.scale (V3 nemaPlateT baseT (baseH + 42)) &
-            Waterfall.translate (unit _x ^* (baseL - nemaL - nemaPlateT)) &
-            (`Waterfall.difference` nemaHolesPositioned)
-        railRiser = Waterfall.unitCube &
-            Waterfall.scale (V3 railBaseL baseT (baseH + railBaseAboveBase))
 
         railScrewR = 6/2
         railScrewCapR = 11/2
@@ -115,8 +106,44 @@ base =
             Waterfall.translate ((sideT - baseT) *^ unit _y )
 
     in (baseProfiled <> railGuides <> baseSideA <> baseSideB) `Waterfall.difference` (railScrew <> nemaHolesPositioned)
-     
+
+coupler :: Waterfall.Solid
+coupler = 
+    let railDialR = 23.5/2 
+        couplerR = railDialR + 2.5
+        clearance = 5 
+        eachHalfDepth = 10
+        totalH = eachHalfDepth * 2 + clearance
+        outerCyl = Waterfall.unitCylinder & 
+            Waterfall.scale (V3 couplerR couplerR totalH) 
+        holeDialCyl = Waterfall.centeredCylinder &
+            Waterfall.scale (V3 railDialR railDialR (eachHalfDepth *2))
+        holeDialGroves = mconcat 
+            [ Waterfall.centeredCylinder & 
+                Waterfall.scale (V3 1 1 (eachHalfDepth * 2)) &
+                Waterfall.translate (unit _x ^* railDialR) &
+                Waterfall.rotate (unit _z) (pi/4 + i * pi/2)
+                | i <- [0..4]
+            ]
+        holeDial = holeDialCyl <> holeDialGroves
+        rShaft = 5 /2
+        shaftCut = Waterfall.centeredCube & 
+            Waterfall.translate (0.5 *^ unit _x) &
+            Waterfall.uScale 100 &
+            Waterfall.translate (2 *^ unit _x)
+
+        shaft = Waterfall.unitCylinder &
+            Waterfall.scale (V3 rShaft rShaft (totalH *2)) &
+            (`Waterfall.difference` shaftCut)
+
+        grubScrewR = 3/2
+        grubScrewHole h = Waterfall.unitCylinder &
+            Waterfall.scale (V3 grubScrewR grubScrewR (couplerR *2)) &
+            Waterfall.rotate (unit _y) (pi/2) &
+            Waterfall.translate (unit _z ^* h)
+      in outerCyl `Waterfall.difference` (holeDial <> shaft <> grubScrewHole 5 <> grubScrewHole (totalH - 5))
 
 main :: IO ()
 main = do
     Waterfall.writeSTL 0.1 "macro-rail-base.stl" base
+    Waterfall.writeSTL 0.1 "macro-rail-coupler.stl" coupler
