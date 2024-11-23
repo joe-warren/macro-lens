@@ -13,7 +13,7 @@ import Data.Function ((&))
 nema17Holes :: Waterfall.Solid
 nema17Holes = 
     let sep = 31
-        h = 100
+        h = 60
         rScrew = 3/2
         screwHole = Waterfall.centeredCylinder & 
             Waterfall.scale (V3 rScrew rScrew h)
@@ -45,6 +45,7 @@ base =
         nemaAxisAboveBase = 42/2
         railAxisAboveRailBase = 12
         railBaseAboveBase = nemaAxisAboveBase - railAxisAboveRailBase
+        
         baseH = 6
 
         basePlate = Waterfall.unitCube &
@@ -78,7 +79,43 @@ base =
                 | yOff <- [-14, 14]
             ]
 
-    in (basePlate <> nemaPlate <> railRiser <> railGuides) `Waterfall.difference` railScrew
+        profile = Waterfall.pathFrom zero
+            [ Waterfall.lineTo (V2 0 (baseH + railBaseAboveBase))
+            , Waterfall.lineRelative (V2 railBaseL 0)
+            , Waterfall.lineRelative (V2 0 (-railBaseAboveBase))
+            , Waterfall.lineRelative (V2 (railDialL + clearance + nemaShaftL - nemaPlateT) 0) 
+            , Waterfall.lineRelative (V2 0 42)
+            , Waterfall.lineRelative (V2 nemaPlateT 0)
+            , Waterfall.lineRelative (V2 0 (-42))
+            , Waterfall.lineRelative (V2 nemaL 0)
+            , Waterfall.lineRelative (V2 0 (-baseH))
+            , Waterfall.lineTo zero
+            ]
+        baseProfiled = Waterfall.prism baseT (Waterfall.fromPath profile) &
+            Waterfall.translate (-baseT *^ unit _z) &
+            Waterfall.rotate (unit _x) (pi/2)
+
+        profileEdges = Waterfall.pathFrom zero
+            [ Waterfall.lineTo (V2 0 (baseH + railBaseAboveBase))
+            , Waterfall.lineRelative (V2 railBaseL 0)
+            , Waterfall.lineRelative (V2 (railDialL + clearance + nemaShaftL - nemaPlateT) (42 - railBaseAboveBase))
+            , Waterfall.lineRelative (V2 nemaPlateT 0)
+            , Waterfall.lineRelative (V2 nemaL (-42))
+            , Waterfall.lineRelative (V2 0 (-baseH))
+            , Waterfall.lineTo zero
+            ]
+
+        sideT = (baseT - 42) /2
+    
+        baseSideA = Waterfall.prism sideT (Waterfall.fromPath profileEdges) &
+            Waterfall.translate (-baseT *^ unit _z) &
+            Waterfall.rotate (unit _x) (pi/2)
+
+        baseSideB = baseSideA &
+            Waterfall.translate ((sideT - baseT) *^ unit _y )
+
+    in (baseProfiled <> railGuides <> baseSideA <> baseSideB) `Waterfall.difference` (railScrew <> nemaHolesPositioned)
+     
 
 main :: IO ()
 main = do
